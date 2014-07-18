@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/local/python-2.7/bin/python
 #
 # Utilitat per comprovar l'estat d'streams HLS i mostrar-ne les caracteristiques
 #
@@ -40,14 +40,17 @@ def analitzaSubManifestNagios(m, test_ts):
           stats_text+=" ERR"
           status=2
       else:
-         for s in u.segments:
-            try:
-               h = httplib.HTTPConnection("")
-               h.request('HEAD', s.uri)
-               resp = h.getresponse()
-            except e:
-               status=2
-               stats_text+=" ERR"     
+         if test_ts:
+             for s in u.segments:
+                try:
+                   url = m.base_uri + "/" + s.uri
+                   h = urllib2.Request(url)
+                   h.get_method = lambda : 'HEAD'
+                   resp = urllib2.urlopen(h)
+                   stats_text+=" OK"
+                except:
+                  status=2
+                  stats_text+=" KO"     
       stats_text+=" OK"
    return status 
 
@@ -73,11 +76,12 @@ def analitzaSubManifestSilent(m, test_ts):
              print "  OK: " + url + " : ",
              for s in u.segments:
                 try:
-                   h = httplib.HTTPConnection("")
-                   h.request('HEAD', s.uri)
-                   resp = h.getresponse()
+                   url = m.base_uri + "/" + s.uri
+                   h = urllib2.Request(url)
+                   h.get_method = lambda : 'HEAD'
+                   resp = urllib2.urlopen(h)
                    print " OK",
-                except e:
+                except:
                    print " KO",
              print " "
           else:
@@ -126,11 +130,12 @@ def analitzaSubManifest(m,test_ts):
              print "     Segments:                      :  " + str(len (u.segments)) + ": ",
              for s in u.segments:
                 try:
-                   h = httplib.HTTPConnection("")
-                   h.request('HEAD', s.uri)
-                   resp = h.getresponse()
+                   url = m.base_uri + "/" + s.uri
+                   h = urllib2.Request(url)
+                   h.get_method = lambda : 'HEAD'
+                   resp = urllib2.urlopen(h)
                    print " OK",
-                except e:
+                except:
                    print " KO",
              print " "
           else:
