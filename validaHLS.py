@@ -11,7 +11,11 @@
 # PD: Primer script en python que faig
 
 import m3u8
-import sys, getopt, urllib2, httplib
+import sys, getopt, urllib2, httplib, signal
+
+def signal_handler(signal, frame):
+        print('Cancelat per Ctrl+C!')
+        sys.exit(0)
 
 stats_text=''
 
@@ -214,13 +218,13 @@ def main(argv):
       variant_m3u8 = m3u8.load(url)
    except urllib2.HTTPError, e:
       print "CRITICAL: Error HTTP " + str(e.code) + ": " + url
-      return 2   
+      sys.exit(2)   
    except urllib2.URLError, e:
       print "CRITICAL: No s'ha pogut connectar a " + url
-      return 2
+      sys.exit(2)
    except:
       print "CRITICAL: Error desconegut al connectar a " + url
-      return 0
+      sys.exit(2)
 
 
    
@@ -241,7 +245,7 @@ def main(argv):
       # Resultats
       if status == 2:
           print "CRITICAL: (" + stats_text + ") " + url
-          sys.exit(1)
+          sys.exit(2)
       elif status == 1:        
           print "WARNING: (" + stats_text + ") " + url
           sys.exit(1)
@@ -270,9 +274,6 @@ def main(argv):
 ####################################################
 # Crida al programa principal
 if __name__ == "__main__":
+   signal.signal(signal.SIGINT, signal_handler)
    main(sys.argv[1:])
-
-# -n nagios mode
-# --expect-res=3 resolucions o submanifests esperats
-# --expect-endlist=false
 
