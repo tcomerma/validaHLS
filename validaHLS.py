@@ -9,6 +9,8 @@
 # https://github.com/globocom/m3u8
 #
 # PD: Primer script en python que faig
+#
+# feb-2015: Modificat per incloure monitoritzacio de EXT-X-TARGETDURATION
 
 import m3u8
 import sys, getopt, urllib2, httplib, signal
@@ -20,7 +22,7 @@ def signal_handler(signal, frame):
 stats_text=''
 
 # Analisi dels SubManfests (Playlists que contenen els .ts i que van variant)
-def analitzaSubManifestNagios(m, test_ts):
+def analitzaSubManifestNagios(m, test_ts,test_target_duration,expected_target_duration):
    err=''
    warn=''
    status=0
@@ -54,8 +56,14 @@ def analitzaSubManifestNagios(m, test_ts):
                    stats_text+=" OK"
                 except:
                   status=2
-                  stats_text+=" KO"     
-      stats_text+=" OK"
+                  stats_text+=" KO"
+         if test_target_duration:
+             if u.target_duration > int(expected_target_duration):
+                if status < 2:
+                   status = 1
+                   stats_text+=" WARN (targetduration)"               
+      if status == 0:
+         stats_text+=" OK"
    return status 
 
 # Analisi dels SubManfests (Playlists que contenen els .ts i que van variant)
@@ -181,6 +189,7 @@ def us():
    print "  -s, --silent   : Resultats mes concisos"
    print "  -n, --nagios   : Resultats compatibles amb un check de nagios"
    print "  -t, --test-ts  : Comprova el segments de la playlist. No els descarrega, nomes fa un HEAD"
+   print "  -d <n>, --target-duration <n>  : Comprova que el valor de EXT-X-TARGET-DURATION estigui per sota de n. Nomes en mode Nagios"
 
 
 def main(argv):
@@ -189,10 +198,12 @@ def main(argv):
    nagios = False
    status = 0
    test_ts = False
+   test_target_duration = False
+   expected_target_duration = 0
    global stats_text
 
    try:
-      opts, args = getopt.getopt(argv,"hsnu:t",["url=", "help", "silent", "nagios","test-ts"])
+      opts, args = getopt.getopt(argv,"hsnu:td:",["url=", "help", "silent", "nagios","test-ts","target-duration="])
    except getopt.GetoptError:
       sys.exit(2)
    for opt, arg in opts:
@@ -207,6 +218,9 @@ def main(argv):
          nagios = True
       elif opt in ("-t", "--test-ts"):
          test_ts = True
+      elif opt in ("-d", "--target-duration"):
+         test_target_duration = True
+         expected_target_duration = arg
    # S'ha indicat URL
    if url == '':
       print 'ERROR: Cal indicar URL a testejar'
@@ -238,7 +252,7 @@ def main(argv):
    if nagios:
       if variant_m3u8.is_variant:
           for playlist in variant_m3u8.playlists:
-             status=max(status,analitzaSubManifestNagios(playlist, test_ts))                 
+             status=max(status,analitzaSubManifestNagios(playlist, test_ts,test_target_duration,expected_target_duration))                 
       else:
          status=max(status,analitzaManifestNagios(variant_m3u8, url))
 
