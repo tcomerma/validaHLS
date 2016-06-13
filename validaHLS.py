@@ -29,9 +29,6 @@ def analitzaSubManifestNagios(m, test_ts,test_target_duration,expected_target_du
    global stats_text
 
    u=None
-   if m.stream_info.program_id:
-       stats_text+=" WARN"
-       status=1 
    try:
       if m.uri.startswith('http'):
          url = m.uri
@@ -42,6 +39,10 @@ def analitzaSubManifestNagios(m, test_ts,test_target_duration,expected_target_du
       stats_text+=" ERR"
       status=2
    else:
+      # Generar warning si versio 6 o posterior
+      if m.stream_info.program_id and int(u.version) > 5:
+          stats_text+=" WARN"
+          status=1 
       if str(len (u.segments)) == 0:
           stats_text+=" ERR"
           status=2
